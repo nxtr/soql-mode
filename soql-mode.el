@@ -28,9 +28,79 @@
 
 ;;; Code:
 
+(defgroup salesforce nil
+  "Support for Salesforce and force.com."
+  :group 'emacs
+  :group 'external)
+
+(defgroup soql nil
+  "Salesforce Object Query Language (SOQL)."
+  :group 'languages
+  :group 'salesforce
+  :prefix "soql-")
+
+(defcustom soql-mode-indent-basic 4
+  "Basic amount of indentation."
+  :type 'integer)
+
+(defcustom soql-mode-hook nil
+  "Hook called by `soql-mode'."
+  :type 'hook)
+
+(require 'smie)
+
+(defconst soql-mode--grammar
+  (smie-prec2->grammar
+   (smie-bnf->prec2
+    '((stmt ("SELECT" fields "FROM" types "USING" "SCOPE" scope)
+            (stmt "WHERE" exp)
+            (stmt "WITH" exp)
+            (stmt "WITH" "DATA" "CATEGORY" exp)
+            (stmt "GROUP" "BY" fields "HAVING" exp)
+            (stmt "GROUP" "BY" "ROLLUP" fields "HAVING" exp)
+            (stmt "GROUP" "BY" "CUBE" fields "HAVING" exp)
+            (stmt "ORDER" "BY" fields)
+            (stmt "LIMIT" num)
+            (stmt "OFFSET" num)
+            (stmt "FOR" "VIEW")
+            (stmt "FOR" "REFERENCE")
+            (stmt "UPDATE" "TRACKING")
+            (stmt "UPDATE" "VIEWSTAT"))
+      (field)
+      (fields (field "," field))
+      (type)
+      (types (type "," type))
+      (scope)
+      (exp)
+      (num))
+    '((assoc ",")))))
+
+(defun soql-mode--rules (kind token)
+  (pcase (cons kind token)
+    (`(:elem . basic) soql-mode-indent-basic)
+    (`(,_ . ",") (smie-rule-separator kind))
+    (`(:list-intro . ,(or `"WHERE" `"WITH" `"CATEGORY" `"HAVING")) t)))
+
+(defvar soql-mode-syntax-table
+  (let ((table (make-syntax-table)))
+    (modify-syntax-entry ?\" "."  table)
+    (modify-syntax-entry ?%  "."  table)
+    (modify-syntax-entry ?\' "\"" table)
+    (modify-syntax-entry ?+  "."  table)
+    (modify-syntax-entry ?-  "."  table)
+    (modify-syntax-entry ?<  "."  table)
+    (modify-syntax-entry ?=  "."  table)
+    (modify-syntax-entry ?>  "."  table)
+    (modify-syntax-entry ?_  "w"  table)
+    table))
+
 ;;;###autoload
 (define-derived-mode soql-mode prog-mode "SOQL"
-  "Major mode for editing Salesforce Object Query Language (SOQL) code.")
+  "Major mode for editing Salesforce Object Query Language (SOQL) code."
+  (smie-setup soql-mode--grammar #'soql-mode--rules)
+  ;; Dummy comment settings
+  (setq comment-start "#")
+  (setq comment-start-skip "\\`.\\`"))
 
 (provide 'soql-mode)
 
