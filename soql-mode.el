@@ -1,6 +1,6 @@
 ;;; soql-mode.el --- Salesforce SOQL Major Mode   -*- lexical-binding: t -*-
 
-;; Copyright (C) 2015 Magnus Nyberg
+;; Copyright (C) 2015-2018 Magnus Nyberg
 
 ;; Author: Magnus Nyberg <magnus@nexter.se>
 ;; Keywords: languages, soql, apex, force, sfdc, salesforce
