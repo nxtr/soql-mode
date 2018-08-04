@@ -47,6 +47,46 @@
   "Hook called by `soql-mode'."
   :type 'hook)
 
+(defvar soql-mode--kwds-regexp
+  (eval-when-compile
+    (list
+     (regexp-opt
+      '("SELECT" "FROM" "USING" "SCOPE" "WHERE" "WITH" "DATA" "CATEGORY"
+        "GROUP" "BY" "ROLLUP" "CUBE" "HAVING"
+        "ORDER" "ASC" "DESC" "NULLS" "FIRST" "LAST"
+        "LIMIT"
+        "OFFSET"
+        "FOR" "VIEW" "REFERENCE" "UPDATE" "TRACKING" "VIEWSTAT"
+        "null" "NULL" "toLabel" "TRUE" "true" "FALSE" "false"
+        "LIKE" "IN" "NOT" "INCLUDES" "includes" "EXCLUDES" "excludes" "AND" "OR"
+        "YESTERDAY" "TODAY" "TOMORROW"
+        "LAST_WEEK" "THIS_WEEK" "NEXT_WEEK"
+        "LAST_MONTH" "THIS_MONTH" "NEXT_MONTH"
+        "LAST_90_DAYS" "NEXT_90_DAYS"
+        "LAST_N_DAYS" "NEXT_N_DAYS"
+        "NEXT_N_WEEKS" "LAST_N_WEEKS"
+        "NEXT_N_MONTHS" "LAST_N_MONTHS"
+        "THIS_QUARTER" "LAST_QUARTER" "NEXT_QUARTER"
+        "NEXT_N_QUARTERS" "LAST_N_QUARTERS"
+        "THIS_YEAR" "LAST_YEAR" "NEXT_YEAR"
+        "NEXT_N_YEARS" "LAST_N_YEARS"
+        "THIS_FISCAL_QUARTER" "LAST_FISCAL_QUARTER" "NEXT_FISCAL_QUARTER"
+        "NEXT_N_FISCAL_QUARTERS" "LAST_N_FISCAL_QUARTERS"
+        "THIS_FISCAL_YEAR" "LAST_FISCAL_YEAR" "NEXT_FISCAL_YEAR"
+        "NEXT_N_FISCAL_YEARS" "LAST_N_FISCAL_YEARS"
+        "AT" "ABOVE" "BELOW" "ABOVE_OR_BELOW"
+        "FORMAT"
+        "GROUPING"
+        "AVG" "COUNT" "COUNT_DISTINCT" "MIN" "MAX" "SUM"
+        "CALENDAR_MONTH" "CALENDAR_QUARTER" "CALENDAR_YEAR"
+        "DAY_IN_MONTH" "DAY_IN_WEEK" "DAY_IN_YEAR"
+        "DAY_ONLY" "FISCAL_MONTH" "FISCAL_QUARTER" "FISCAL_YEAR"
+        "HOUR_IN_DAY" "WEEK_IN_MONTH" "WEEK_IN_YEAR"
+        "convertTimezone"
+        "convertCurrency"
+        "DISTANCE" "GEOLOCATION")
+      'words))))
+
 (require 'smie)
 
 (defconst soql-mode--grammar
@@ -97,6 +137,7 @@
 ;;;###autoload
 (define-derived-mode soql-mode prog-mode "SOQL"
   "Major mode for editing Salesforce Object Query Language (SOQL) code."
+  (setq font-lock-defaults '(soql-mode--kwds-regexp))
   (smie-setup soql-mode--grammar #'soql-mode--rules)
   ;; Dummy comment settings
   (setq comment-start "#")
