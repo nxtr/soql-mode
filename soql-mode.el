@@ -43,6 +43,12 @@
   "Basic amount of indentation."
   :type 'integer)
 
+(defcustom soql-mode-keywords-case-fold nil
+  "You can specify if keyword highlighting and indentation should be
+case-insensitive."
+  :type '(choice (const :tag "Case-sensitive" nil)
+                 (const :tag "Case-insensitive" t)))
+
 (defcustom soql-mode-hook nil
   "Hook called by `soql-mode'."
   :type 'hook)
@@ -121,6 +127,31 @@
     (`(,_ . ",") (smie-rule-separator kind))
     (`(:list-intro . ,(or `"WHERE" `"WITH" `"CATEGORY" `"HAVING")) t)))
 
+(defun soql-mode--upcase-backward-token ()
+  (upcase (funcall (default-value 'smie-backward-token-function))))
+
+(defun soql-mode--upcase-forward-token ()
+  (upcase (funcall (default-value 'smie-forward-token-function))))
+
+(eval-when-compile
+  (require 'cl-lib))
+
+(defun soql-mode--upcase-grammar (grammar)
+  (cl-labels ((uc-g (grammar)       ; upcase grammar (and closer-alist)
+                    (let (res)
+                      (dolist (e grammar res)
+                        (setq res (append res (list (uc-t (car e) (cdr e))))))))
+              (uc-t (tok tail)         ; upcase cons
+                    (cond
+                     ((and (stringp tok) (stringp tail))
+                      (cons (upcase tok) (upcase tail)))
+                     ((stringp tok)
+                      (cons (upcase tok) tail))
+                     ((and (eq tok :smie-closer-alist) (listp tail))
+                      (cons tok (uc-g tail)))
+                     (t (error "Unknown grammar %s" (cons tok tail))))))
+    (uc-g grammar)))
+
 (defvar soql-mode-syntax-table
   (let ((table (make-syntax-table)))
     (modify-syntax-entry ?\" "."  table)
@@ -137,8 +168,18 @@
 ;;;###autoload
 (define-derived-mode soql-mode prog-mode "SOQL"
   "Major mode for editing Salesforce Object Query Language (SOQL) code."
-  (setq font-lock-defaults '(soql-mode--kwds-regexp))
-  (smie-setup soql-mode--grammar #'soql-mode--rules)
+  (setq font-lock-defaults
+        `(soql-mode--kwds-regexp nil ,soql-mode-keywords-case-fold))
+  (if soql-mode-keywords-case-fold
+      (condition-case err
+          (smie-setup
+           (soql-mode--upcase-grammar soql-mode--grammar) #'soql-mode--rules
+           :backward-token #'soql-mode--upcase-backward-token
+           :forward-token #'soql-mode--upcase-forward-token)
+        (error (message "%s" (error-message-string err))
+               ;; Continue with case-sensitive grammar
+               (smie-setup soql-mode--grammar #'soql-mode--rules)))
+    (smie-setup soql-mode--grammar #'soql-mode--rules))
   ;; Dummy comment settings
   (setq comment-start "#")
   (setq comment-start-skip "\\`.\\`"))
